@@ -22,9 +22,6 @@ public:
 
 public slots:
     void uiSlot(HID_JOYSTK_Info_TypeDef *dev);
-    void errorModbus(QString);
-    void errorUSB(QString);
-    void errorCOM(QString);
 
 private slots:
     void on_tabWidget_tabBarClicked(int index);

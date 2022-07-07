@@ -4,6 +4,7 @@
 #include <QModbusRtuSerialMaster>
 #include <QSerialPort>
 #include <QDebug>
+#include <QDateTime>
 
 PlcModbus::PlcModbus(QObject *parent)
     : QObject{parent},
@@ -12,12 +13,10 @@ PlcModbus::PlcModbus(QObject *parent)
     plcDevice = new QModbusRtuSerialMaster(this);
     connect(plcDevice, &QModbusClient::errorOccurred, this, [this](QModbusDevice::Error) {
         errorMessage(plcDevice->errorString());
-        emit comError(plcDevice->errorString());
     });
 
     if(!plcDevice) {
         errorMessage(tr("Could not create Modbus master."));
-        emit comError(tr("Could not create Modbus master."));
     } else {
         connect(plcDevice, &QModbusClient::stateChanged, this, &PlcModbus::onStateChanged);
     }
@@ -52,18 +51,18 @@ void PlcModbus::errorMessage(QString msg)
 /*Подключение порта*/
 void PlcModbus::portConnect()
 {
-    if(!plcDevice) return;
+    if(!plcDevice)
+        return;
     if(plcDevice->state() != QModbusDevice::ConnectedState) {
         plcDevice->setConnectionParameter(QModbusDevice::SerialPortNameParameter, QString("COM1"));
         plcDevice->setConnectionParameter(QModbusDevice::SerialParityParameter, QSerialPort::NoParity);
-        plcDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, QSerialPort::Baud19200);
+        plcDevice->setConnectionParameter(QModbusDevice::SerialBaudRateParameter, QSerialPort::Baud9600);
         plcDevice->setConnectionParameter(QModbusDevice::SerialDataBitsParameter, QSerialPort::Data8);
         plcDevice->setConnectionParameter(QModbusDevice::SerialStopBitsParameter, QSerialPort::OneStop);
-        plcDevice->setTimeout(100);
+        plcDevice->setTimeout(50);
         plcDevice->setNumberOfRetries(0);
         if(!plcDevice->connectDevice()) {
             errorMessage("Connected failed: " + plcDevice->errorString());
-            emit comError("Connected failed: " + plcDevice->errorString());
         } else {
             qInfo()<< "Port connected";
         }
@@ -117,13 +116,9 @@ void PlcModbus::plcReadWrite()
                 if (reply->error() == QModbusDevice::ProtocolError) {
                     errorMessage(tr("Write response error: %1 (Mobus exception: 0x%2)")
                                  .arg(reply->errorString()).arg(reply->rawResult().exceptionCode(), -1, 16));
-                    emit modbusError(tr("Write response error: %1 (Mobus exception: 0x%2)")
-                                     .arg(reply->errorString()).arg(reply->rawResult().exceptionCode(), -1, 16));
                 } else if (reply->error() != QModbusDevice::NoError) {
                     errorMessage(tr("Write response error: %1 (code: 0x%2)").
                                  arg(reply->errorString()).arg(reply->error(), -1, 16));
-                    emit modbusError(tr("Write response error: %1 (code: 0x%2)").
-                                     arg(reply->errorString()).arg(reply->error(), -1, 16));
                 }
                 reply->deleteLater();
             });
@@ -133,32 +128,32 @@ void PlcModbus::plcReadWrite()
         }
     } else {
         errorMessage(tr("Read error: ") + plcDevice->errorString());
-        emit comError(tr("Read error: ") + plcDevice->errorString());
     }
 
-//    if (auto *reply = plcDevice->sendWriteRequest(writeCoilsUnit, 1)) {
-//        if (!reply->isFinished()) {
-//            connect(reply, &QModbusReply::finished, this, [this, reply]() {
-//                if (reply->error() == QModbusDevice::ProtocolError) {
-//                    errorMessage(tr("Write response error: %1 (Mobus exception: 0x%2)")
-//                                 .arg(reply->errorString()).arg(reply->rawResult().exceptionCode(), -1, 16));
-//                    emit modbusError(tr("Write response error: %1 (Mobus exception: 0x%2)")
-//                                     .arg(reply->errorString()).arg(reply->rawResult().exceptionCode(), -1, 16));
-//                } else if (reply->error() != QModbusDevice::NoError) {
-//                    errorMessage(tr("Write response error: %1 (code: 0x%2)").
-//                                 arg(reply->errorString()).arg(reply->error(), -1, 16));
-//                    emit modbusError(tr("Write response error: %1 (code: 0x%2)").
-//                                     arg(reply->errorString()).arg(reply->error(), -1, 16));
-//                }
-//                reply->deleteLater();
-//            });
-//        } else {
-//            // broadcast replies return immediately
-//            reply->deleteLater();
-//        }
-//    } else {
-//        errorMessage(tr("Read error: ") + plcDevice->errorString());
-//        emit comError(tr("Read error: ") + plcDevice->errorString());
+    //    if (auto *reply = plcDevice->sendWriteRequest(writeCoilsUnit, 1)) {
+    //        if (!reply->isFinished()) {
+    //            connect(reply, &QModbusReply::finished, this, [this, reply]() {
+    //                if (reply->error() == QModbusDevice::ProtocolError) {
+    //                    errorMessage(tr("Write response error: %1 (Mobus exception: 0x%2)")
+    //                                 .arg(reply->errorString()).arg(reply->rawResult().exceptionCode(), -1, 16));
+    //                } else if (reply->error() != QModbusDevice::NoError) {
+    //                    errorMessage(tr("Write response error: %1 (code: 0x%2)").
+    //                                 arg(reply->errorString()).arg(reply->error(), -1, 16));
+    //                }
+    //                reply->deleteLater();
+    //            });
+    //        } else {
+    //            // broadcast replies return immediately
+    //            reply->deleteLater();
+    //        }
+    //    } else {
+    //        errorMessage(tr("Read error: ") + plcDevice->errorString());
+    //    }
+
+//    if (!plcDevice->error()) {
+//        plcDevice->disconnectDevice();
+//        portConnect();
+//        return;
 //    }
 
 }

@@ -15,9 +15,6 @@ class PlcModbus : public QObject
 public:
     explicit PlcModbus(QObject *parent = nullptr);
      ~PlcModbus();
-signals:
-    void modbusError(QString);
-    void comError(QString);
 
 private:
     QModbusDataUnit readDiscRequest() const;

@@ -34,13 +34,13 @@ class JoyHID : public QObject
 
 public:
     explicit JoyHID(QObject *parent = nullptr);
+    ~JoyHID();
     HID_JOYSTK_Info_TypeDef joyInfo;
 
 signals:
     void toStart_All();
     void toUpdate();
     void updateUI(HID_JOYSTK_Info_TypeDef *dev);
-    void usbError(QString);
 
 public slots:
     void init_machine();

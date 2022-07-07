@@ -22,39 +22,51 @@ JoyHID::JoyHID(QObject *parent)
     }
 }
 
+JoyHID::~JoyHID()
+{
+    hid_exit(); //
+}
+
 void JoyHID::joyStart()
 {
-//    qInfo()<< "Joy machine state: start";
-    QThread::usleep(20);
-//    QThread::msleep(50);
+    QThread::usleep(20); // Thread synchro delay
     emit toUpdate();
 }
 
 void JoyHID::joyHIDUpdate()
 {
-//    qInfo()<< "Joy machine state: update";
     unsigned char buf[64];
 
     memset(buf, 0x00, sizeof(buf)); // Set command buf.
     buf[0] = 0x01;
     buf[1] = 0x81;
 
-    hid_read(handle, buf, 64); // Get report
-    if((((uint16_t)buf[2] << 8) | buf[1])!=129) {
-        joyInfo.X = ((uint16_t)buf[2] << 8) | buf[1];
-        joyInfo.Y = ((uint16_t)buf[4] << 8) | buf[3];
-        joyInfo.Z = ((uint16_t)buf[10] << 8) | buf[9];
-        joyInfo.X_low = ((uint16_t)buf[6] << 8) | buf[5];
-        joyInfo.Y_low = ((uint16_t)buf[8] << 8) | buf[7];
-
-        joyInfo.buttons[0] = 1;
-        joyInfo.buttons[1] = 0;
-        joyInfo.buttons[2] = 1;
-        joyInfo.buttons[3] = 0;
-        joyInfo.buttons[4] = 1;
+    if ((hid_enumerate(0x231d, 0x126) != NULL) || (wcscmp(hid_error(handle), L"Success"))) {
+        if (!handle) {
+            handle = hid_open(0x231d, 0x126, NULL); // Open (restart) device, use VID and PID
+        } else {
+            hid_read(handle, buf, 64); // Get report
+            if((((uint16_t)buf[2] << 8) | buf[1])!=129) {
+                joyInfo.X = ((uint16_t)buf[2] << 8) | buf[1];
+                joyInfo.Y = ((uint16_t)buf[4] << 8) | buf[3];
+                joyInfo.Z = ((uint16_t)buf[10] << 8) | buf[9];
+                joyInfo.X_low = ((uint16_t)buf[6] << 8) | buf[5];
+                joyInfo.Y_low = ((uint16_t)buf[8] << 8) | buf[7];
+                joyInfo.buttons[0] = 1;
+                joyInfo.buttons[1] = 0;
+                joyInfo.buttons[2] = 1;
+                joyInfo.buttons[3] = 0;
+                joyInfo.buttons[4] = 1;
+            }
+            emit updateUI(&joyInfo); // Signal for updating joystick values
+        }
+    } else {
+        if (handle) {
+            hid_close(handle); // Close if error detected
+            handle = NULL;
+        }
     }
-    emit updateUI(&joyInfo);
-    emit toStart_All();
+    emit toStart_All(); // Next state
 }
 
 void JoyHID::startMachine()

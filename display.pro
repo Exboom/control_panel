@@ -37,7 +37,7 @@ win32:CONFIG(release, debug|release): LIBS += -L$$PWD/./ -lhidapi
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/./ -lhidapi
 
 DISTFILES += \
-    Joystick.ico
+    Joystick.ico \
 
 win32:RC_ICONS += Joystick.ico
 
